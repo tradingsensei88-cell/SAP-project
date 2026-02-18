@@ -1,0 +1,18 @@
+[
+  {
+    "id": "gvo4ajj92",
+    "email": "test@gmail.com",
+    "password": "$2b$10$Mgjxow/QFe9ob6KYnRslV.PMXjrBp4q90tyQ48GTDkxQ.q9UypPvy",
+    "name": "Anish Chavan",
+    "role": "student",
+    "credits": 30
+  },
+  {
+    "id": "ifwj6ku3m",
+    "email": "teacher@gmail.com",
+    "password": "$2b$10$axN6862Whub7xOPIXbwjDupUfPhebdufrSD8HoFfKYmFugRjCtzL.",
+    "name": "Teacher1",
+    "role": "student",
+    "credits": 30
+  }
+]
