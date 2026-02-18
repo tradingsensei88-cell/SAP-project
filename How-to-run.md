@@ -15,40 +15,45 @@ Before you begin, make sure the following are installed on the target machine:
 | **Git** | Any recent version | [git-scm.com](https://git-scm.com) |
 
 > [!IMPORTANT]
-> **Node.js v18 or v20 is required.** The project uses Next.js 16 and React 19 which require a modern Node.js version. Do NOT use Node.js v16 or below.
+> **Node.js v18 or v20 is required.** The project uses Next.js 15 and React 19 which require a modern Node.js version. Do NOT use Node.js v16 or below.
 
 To verify your versions, run:
 ```bash
 node -v
 npm -v
+git --version
 ```
 
 ---
 
-## 📁 Step 1 — Get the Project Files
+## 📁 Step 1 — Clone the Repository from GitHub
 
-Copy the entire project folder to the new machine. You can do this via:
-- USB drive / external storage
-- ZIP file transfer
-- Git clone (if hosted on GitHub)
-
-Make sure the following files/folders are included:
+```bash
+git clone https://github.com/tradingsensei88-cell/SAP-project.git
+cd SAP-project
 ```
-Antigravity Sap project/
+
+> [!NOTE]
+> If the repository is private, you will need to be added as a collaborator or use a personal access token (PAT) for authentication.
+
+The cloned repo will include:
+```
+SAP-project/
 ├── src/
 ├── prisma/
 ├── public/
-├── dev.db              ← SQLite database (CRITICAL — contains all data)
+├── dev.db              ← SQLite database (included in repo)
 ├── package.json
 ├── package-lock.json
 ├── next.config.ts
 ├── tsconfig.json
 ├── postcss.config.mjs
-└── .env                ← Environment variables (see Step 3)
+└── How-to-run.md
 ```
 
 > [!CAUTION]
-> The `node_modules/` and `.next/` folders do NOT need to be copied — they will be regenerated. In fact, it's better to exclude them to save space.
+> The `.env` file is **NOT included** in the repository (it is gitignored for security). You must create it manually — see **Step 3**.
+> `node_modules/` and `.next/` are also excluded and will be regenerated.
 
 ---
 
@@ -88,7 +93,10 @@ This will install all packages listed in `package.json`, including:
 
 ## ⚙️ Step 3 — Set Up Environment Variables
 
-Create a file named **`.env`** in the project root (if it wasn't included in the transfer). Copy and fill in the following:
+> [!CAUTION]
+> The `.env` file is **gitignored** and will never be committed to GitHub. You must create it manually on every machine you run this project on.
+
+Create a file named **`.env`** in the project root and fill in the following:
 
 ```env
 # Database — SQLite file path (do not change this)
@@ -129,16 +137,16 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
 ## 🗄️ Step 4 — Set Up the Database
 
-The project uses **SQLite** via Prisma. The database file is `dev.db` in the project root.
+The project uses **SQLite** via Prisma. The database file `dev.db` is included in the repository.
 
-### Option A — If `dev.db` was included in the transfer (recommended)
-The database already has all schema and data. Just generate the Prisma client:
+### Option A — `dev.db` is present (default after cloning)
+Just generate the Prisma client:
 
 ```bash
 npx prisma generate
 ```
 
-### Option B — If `dev.db` was NOT included (fresh start)
+### Option B — Starting fresh (no `dev.db`)
 Run migrations to create the database schema, then generate the client:
 
 ```bash
@@ -192,7 +200,55 @@ Replace `your-email@example.com` with the email you registered with.
 
 ---
 
-## 🔧 Common Issues & Fixes
+## � Committing & Pushing Changes to GitHub
+
+### First-time setup (if not already done)
+```bash
+git init
+git remote add origin https://github.com/tradingsensei88-cell/SAP-project.git
+```
+
+### Standard workflow for committing changes
+
+```bash
+# 1. Check what files have changed
+git status
+
+# 2. Stage your changes
+git add .
+
+# 3. Commit with a descriptive message
+git commit -m "your commit message here"
+
+# 4. Push to GitHub
+git push origin main
+```
+
+> [!IMPORTANT]
+> The `.env` file is gitignored and will **never** be pushed to GitHub — this is intentional to keep your secrets safe.
+
+> [!NOTE]
+> If `dev.db` has changed (e.g. new schema migrations), it **will** be committed since it is tracked by Git. This is fine for development — just make sure not to commit sensitive user data in production.
+
+### Useful Git commands
+
+```bash
+# See commit history
+git log --oneline
+
+# Undo last commit (keep changes)
+git reset --soft HEAD~1
+
+# Pull latest changes from GitHub
+git pull origin main
+
+# Create and switch to a new branch
+git checkout -b feature/your-feature-name
+```
+
+---
+
+## �🔧 Common Issues & Fixes
 
 ### ❌ `better-sqlite3` build error on Windows
 ```bash
@@ -226,6 +282,12 @@ Either set up Google OAuth credentials (see Step 3) or just use email/password l
 
 ### ❌ Video uploads not working
 Make sure all 4 Cloudinary variables are correctly set in `.env`.
+
+### ❌ `git push` rejected (not up to date)
+```bash
+git pull origin main --rebase
+git push origin main
+```
 
 ---
 
@@ -265,7 +327,7 @@ src/
 └── middleware.ts          # Route protection
 prisma/
 └── schema.prisma         # Database schema
-dev.db                    # SQLite database file
+dev.db                    # SQLite database file (tracked in Git)
 ```
 
 ---
@@ -273,8 +335,9 @@ dev.db                    # SQLite database file
 ## ✅ Quick Checklist
 
 - [ ] Node.js v18+ installed
+- [ ] Repository cloned from GitHub
 - [ ] `npm install` completed successfully
-- [ ] `.env` file created with all required variables
+- [ ] `.env` file created manually with all required variables
 - [ ] `dev.db` file present in project root
 - [ ] `npx prisma generate` run successfully
 - [ ] `npm run dev` started without errors
