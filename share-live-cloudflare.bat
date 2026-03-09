@@ -1,0 +1,9 @@
+@echo off
+echo Starting Next.js server...
+start npm run dev
+
+echo Waiting for server to start...
+timeout /t 10
+
+echo Starting Cloudflare Tunnel...
+npx cloudflared tunnel --url http://localhost:3000
