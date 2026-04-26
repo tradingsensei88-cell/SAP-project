@@ -3,18 +3,23 @@
 import Navbar from "@/components/Navbar";
 import { Check, Sparkles, Zap } from "lucide-react";
 import { motion } from "framer-motion";
+import { useRazorpay, RazorpayOrderOptions } from "react-razorpay";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 const PLANS = [
     {
         name: "Starter",
         price: "Free",
+        amount: 0,
         credits: "30 Credits",
         features: ["Access to free courses", "Basic AI answers", "Community support"],
         popular: false,
     },
     {
         name: "Learner",
-        price: "$0.22",
+        price: "₹19", // Approx $0.22
+        amount: 19,
         credits: "50 Credits",
         features: ["All Free features", "Priority AI response", "HD Video downloads", "Certificate of completion"],
         popular: true,
@@ -22,7 +27,8 @@ const PLANS = [
     },
     {
         name: "Pro",
-        price: "$0.55",
+        price: "₹46", // Approx $0.55
+        amount: 46,
         credits: "Unlimited",
         features: ["All Learner features", "Unlimited AI credits", "1-on-1 Instructor chat", "Offline mode"],
         popular: false,
@@ -30,6 +36,95 @@ const PLANS = [
 ];
 
 export default function PricingPage() {
+    const { Razorpay } = useRazorpay();
+    const router = useRouter();
+    const [loading, setLoading] = useState(false);
+
+    const handlePayment = async (plan: typeof PLANS[0]) => {
+        if (plan.amount === 0) {
+            router.push('/dashboard');
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            // 1. Create Order
+            const response = await fetch('/api/razorpay/order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    amount: plan.amount, // Amount in INR
+                    currency: "INR",
+                    receipt: `receipt_${Date.now()}_${plan.name}`,
+                }),
+            });
+
+            const order = await response.json();
+
+            if (!response.ok) {
+                alert("Error creating order: " + order.error);
+                setLoading(false);
+                return;
+            }
+
+            // 2. Open Razorpay Modal
+            const options: RazorpayOrderOptions = {
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "",
+                amount: order.amount.toString(),
+                currency: order.currency,
+                name: "Antigravity SAP",
+                description: `Subscribe to ${plan.name} Plan`,
+                order_id: order.orderId,
+                handler: async (response: any) => {
+                    // 3. Verify Payment
+                    const verifyResponse = await fetch('/api/razorpay/verify', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                        }),
+                    });
+
+                    const verifyData = await verifyResponse.json();
+
+                    if (verifyResponse.ok && verifyData.message === "success") {
+                        router.push('/checkout/success?payment_id=' + response.razorpay_payment_id);
+                    } else {
+                        alert("Payment verification failed!");
+                    }
+                },
+                prefill: {
+                    name: "User Name", // You can fetch this from auth
+                    email: "user@example.com", // You can fetch this from auth
+                    contact: "9999999999",
+                },
+                theme: {
+                    color: "#CCFF00",
+                },
+                modal: {
+                    ondismiss: () => {
+                        setLoading(false);
+                        console.log("Checkout cancelled");
+                    }
+                }
+            };
+
+            const rzp1 = new Razorpay(options);
+            rzp1.open();
+        } catch (error) {
+            console.error("Payment failed", error);
+            alert("Something went wrong!");
+            setLoading(false);
+        }
+    };
+
     return (
         <main className="min-h-screen bg-[var(--background)] text-white selection:bg-[var(--wonder-green)] selection:text-black">
             <Navbar />
@@ -80,11 +175,14 @@ export default function PricingPage() {
                                 ))}
                             </ul>
 
-                            <button className={`w-full py-4 rounded-xl font-bold transition-all ${plan.popular
+                            <button
+                                onClick={() => handlePayment(plan)}
+                                disabled={loading}
+                                className={`w-full py-4 rounded-xl font-bold transition-all ${plan.popular
                                     ? 'bg-[var(--wonder-green)] text-black hover:shadow-[0_0_20px_rgba(204,255,0,0.4)]'
                                     : 'bg-white text-black hover:bg-gray-200'
-                                }`}>
-                                Choose {plan.name}
+                                    } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                {loading ? 'Processing...' : `Choose ${plan.name}`}
                             </button>
                         </motion.div>
                     ))}
@@ -92,12 +190,13 @@ export default function PricingPage() {
 
                 {/* Payment Methods */}
                 <div className="mt-20 pt-10 border-t border-white/5 flex flex-col items-center">
-                    <p className="text-gray-500 text-sm mb-4">SECURE PAYMENT VIA</p>
+                    <p className="text-gray-500 text-sm mb-4">SECURE PAYMENT VIA RAZORPAY</p>
                     <div className="flex items-center gap-6 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
-                        {/* Simple Text placeholders for logos since I don't have SVGs handy */}
-                        <span className="text-xl font-bold">Google Pay</span>
+                        {/* Improved placeholders or icons could go here */}
+                        <span className="text-xl font-bold">UPI</span>
                         <span className="text-xl font-bold">VISA</span>
                         <span className="text-xl font-bold">Mastercard</span>
+                        <span className="text-xl font-bold">RuPay</span>
                     </div>
                 </div>
             </div>

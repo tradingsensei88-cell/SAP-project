@@ -1,33 +1,73 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
-import { BookOpen, Clock, Award, TrendingUp, Play } from "lucide-react";
+import { BookOpen, Clock, Award, TrendingUp, Play, Coins, User } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 
-const ENROLLED_COURSES = [
-    { id: 1, title: "Advanced Blender Logic", progress: 75, totalLessons: 24, completedLessons: 18, thumbnail: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop" },
-    { id: 2, title: "React Performance Mastery", progress: 45, totalLessons: 18, completedLessons: 8, thumbnail: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=2670&auto=format&fit=crop" },
-    { id: 3, title: "Next.js 14 Complete Guide", progress: 20, totalLessons: 30, completedLessons: 6, thumbnail: "https://images.unsplash.com/photo-1627398242454-45a1465c2479?q=80&w=2574&auto=format&fit=crop" },
-];
-
-const STATS = [
-    { label: "Courses Enrolled", value: "3", icon: BookOpen, color: "text-blue-400" },
-    { label: "Hours Learned", value: "42", icon: Clock, color: "text-green-400" },
-    { label: "Certificates", value: "1", icon: Award, color: "text-yellow-400" },
-    { label: "Avg. Progress", value: "47%", icon: TrendingUp, color: "text-[var(--wonder-green)]" },
-];
-
 export default function DashboardPage() {
     const { data: session, status } = useSession();
+    const [realCredits, setRealCredits] = useState<number>(0);
+    const [maxCredits, setMaxCredits] = useState<number>(30);
+
+    const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
+    const [dashboardStats, setDashboardStats] = useState({
+        enrolled: 0,
+        hours: 0,
+        certificates: 0,
+        avgProgress: 0,
+    });
 
     useEffect(() => {
         if (status === "unauthenticated") {
             window.location.href = "/login";
         }
-    }, [status]);
+        if (session?.user) {
+            // Fetch profile credits
+            fetch("/api/user/profile")
+                .then(res => res.json())
+                .then(data => {
+                    setRealCredits(data.credits || 0);
+                    setMaxCredits(data.maxCredits || 30);
+                });
+
+            // Fetch enrolled courses and compute stats
+            fetch("/api/user/enrollments")
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.enrollments) {
+                        setEnrolledCourses(data.enrollments);
+
+                        const enrolledCount = data.enrollments.length;
+                        let totalProgress = 0;
+                        let completedCourses = 0;
+
+                        data.enrollments.forEach((e: any) => {
+                            totalProgress += e.progress;
+                            if (e.progress === 100) completedCourses++;
+                        });
+
+                        const avgProgress = enrolledCount > 0 ? Math.round(totalProgress / enrolledCount) : 0;
+
+                        setDashboardStats({
+                            enrolled: enrolledCount,
+                            hours: data.stats?.hoursLearned || 0,
+                            certificates: completedCourses,
+                            avgProgress,
+                        });
+                    }
+                });
+        }
+    }, [status, session]);
+
+    const STATS = [
+        { label: "Courses Enrolled", value: dashboardStats.enrolled.toString(), icon: BookOpen, color: "text-blue-400" },
+        { label: "Hours Learned", value: dashboardStats.hours.toString(), icon: Clock, color: "text-green-400" },
+        { label: "Certificates", value: dashboardStats.certificates.toString(), icon: Award, color: "text-yellow-400" },
+        { label: "Avg. Progress", value: `${dashboardStats.avgProgress}%`, icon: TrendingUp, color: "text-[var(--wonder-green)]" },
+    ];
 
     if (status === "loading") {
         return (
@@ -41,20 +81,100 @@ export default function DashboardPage() {
         return null;
     }
 
+    const creditPercentage = Math.min((realCredits / maxCredits) * 100, 100);
+
     return (
         <main className="min-h-screen bg-[var(--background)] text-white">
             <Navbar />
 
-            <div className="pt-24 px-6 max-w-7xl mx-auto">
+            <div className="pt-24 px-6 max-w-7xl mx-auto pb-12">
                 {/* Welcome Section */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-12"
-                >
-                    <h1 className="text-4xl font-bold mb-2">Welcome back, <span className="text-[var(--wonder-green)]">{session.user?.name}</span>!</h1>
-                    <p className="text-gray-400">Continue your learning journey</p>
-                </motion.div>
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                    >
+                        <h1 className="text-4xl font-bold mb-2">Welcome back, <span className="text-[var(--wonder-green)]">{session.user?.name}</span>!</h1>
+                        <p className="text-gray-400">Continue your learning journey</p>
+                    </motion.div>
+
+                    {/* Credits Bar */}
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-[var(--wonder-gray)] p-4 rounded-2xl border border-white/5 w-full md:w-80"
+                    >
+                        <div className="flex justify-between items-center mb-2">
+                            <div className="flex items-center gap-2">
+                                <span className="p-1.5 bg-yellow-500/10 rounded-lg">
+                                    <Coins size={14} className="text-yellow-500" />
+                                </span>
+                                <span className="text-sm font-bold">Credits</span>
+                            </div>
+                            <span className="text-xs font-bold text-[var(--wonder-green)]">{realCredits} / 100</span>
+                        </div>
+                        <div className="w-full h-2 bg-black/40 rounded-full overflow-hidden">
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${Math.min((realCredits / 100) * 100, 100)}%` }}
+                                className="h-full bg-gradient-to-r from-[var(--wonder-green)] to-green-400"
+                            />
+                        </div>
+                    </motion.div>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                    <Link href="/dashboard/transcribe">
+                        <motion.div
+                            whileHover={{ y: -5 }}
+                            className="bg-gradient-to-br from-[var(--wonder-gray)] to-black/40 p-6 rounded-3xl border border-white/5 hover:border-red-500/30 transition-all group flex items-center justify-between"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="p-4 bg-red-500/10 rounded-2xl text-red-500 group-hover:bg-red-500 group-hover:text-white transition-all">
+                                    <Play size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold">YouTube Transcriber</h3>
+                                    <p className="text-sm text-gray-400">Extract text from videos instantly</p>
+                                </div>
+                            </div>
+                            <motion.div
+                                initial={{ x: 0 }}
+                                whileHover={{ x: 5 }}
+                                className="text-[var(--wonder-green)]"
+                            >
+                                →
+                            </motion.div>
+                        </motion.div>
+                    </Link>
+
+                    <Link href="/dashboard/profile">
+                        <motion.div
+                            whileHover={{ y: -5 }}
+                            className="bg-gradient-to-br from-[var(--wonder-gray)] to-black/40 p-6 rounded-3xl border border-white/5 hover:border-[var(--wonder-green)]/30 transition-all group flex items-center justify-between"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="p-4 bg-[var(--wonder-green)]/10 rounded-2xl text-[var(--wonder-green)] group-hover:bg-[var(--wonder-green)] group-hover:text-white transition-all text-black">
+                                    <User size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold">Edit Profile</h3>
+                                    <p className="text-sm text-gray-400">Update your avatar and bio</p>
+                                </div>
+                            </div>
+                            <motion.div
+                                initial={{ x: 0 }}
+                                whileHover={{ x: 5 }}
+                                className="text-[var(--wonder-green)]"
+                            >
+                                →
+                            </motion.div>
+                        </motion.div>
+                    </Link>
+                </div>
+
+                {/* Stats Grid */}
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
@@ -84,7 +204,7 @@ export default function DashboardPage() {
                 >
                     <h2 className="text-2xl font-bold mb-6">Learning Progress</h2>
                     <div className="space-y-4">
-                        {ENROLLED_COURSES.map((course, i) => (
+                        {enrolledCourses.map((course: any, i: number) => (
                             <div key={i}>
                                 <div className="flex justify-between mb-2">
                                     <span className="text-sm font-medium">{course.title}</span>
@@ -107,7 +227,7 @@ export default function DashboardPage() {
                 <div>
                     <h2 className="text-2xl font-bold mb-6">Continue Learning</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {ENROLLED_COURSES.map((course, i) => (
+                        {enrolledCourses.map((course: any, i: number) => (
                             <motion.div
                                 key={i}
                                 initial={{ opacity: 0, y: 20 }}
@@ -127,7 +247,7 @@ export default function DashboardPage() {
                                     </div>
                                 </div>
                                 <div className="p-4">
-                                    <Link href={`/course/${course.id}`}>
+                                    <Link href={`/courses/${course.id}/learn`}>
                                         <button className="w-full bg-white/10 hover:bg-[var(--wonder-green)] hover:text-black text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 group-hover:shadow-[0_0_15px_rgba(204,255,0,0.3)]">
                                             <Play size={18} /> Continue
                                         </button>

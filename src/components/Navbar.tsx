@@ -56,7 +56,10 @@ export default function Navbar() {
             {/* Right: Menu */}
             <div className="flex items-center space-x-8 text-sm font-medium uppercase tracking-wide ml-auto">
                 {mounted && session ? (
-                    <Link href="/dashboard" className="hover:text-[var(--wonder-green)] transition-colors">Dashboard</Link>
+                    <>
+                        <Link href="/dashboard" className="hover:text-[var(--wonder-green)] transition-colors">Dashboard</Link>
+                        <Link href="/dashboard/profile" className="hover:text-blue-400 transition-colors">Profile</Link>
+                    </>
                 ) : (
                     <Link href="/" className="hover:text-[var(--wonder-green)] transition-colors">Home</Link>
                 )}
@@ -65,7 +68,6 @@ export default function Navbar() {
 
                 {mounted && session ? (
                     <div className="flex items-center gap-4">
-                        <span className="text-[var(--wonder-green)] normal-case">{session.user?.name}</span>
                         <button onClick={() => signOut()} className="hover:text-red-500 transition-colors">LOGOUT</button>
                     </div>
                 ) : (

@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import Navbar from "@/components/Navbar";
 import { ChevronLeft, ChevronRight, CheckCircle, Play, Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { CourseAIChatWidget } from "@/components/course/ai/CourseAIChatWidget";
 
 interface VideoData {
     id: string;
@@ -228,11 +229,13 @@ export default function LearnPage() {
 
                 {!sidebarOpen && (
                     <button onClick={() => setSidebarOpen(true)}
-                        className="fixed right-4 bottom-4 bg-[var(--wonder-green)] text-black p-3 rounded-full shadow-lg hover:shadow-[0_0_20px_rgba(204,255,0,0.4)] transition-all z-50">
+                        className="fixed right-4 bottom-24 bg-[var(--wonder-green)] text-black p-3 rounded-full shadow-lg hover:shadow-[0_0_20px_rgba(204,255,0,0.4)] transition-all z-50">
                         <ChevronLeft size={20} />
                     </button>
                 )}
             </div>
+
+            <CourseAIChatWidget courseId={id} />
         </main>
     );
 }

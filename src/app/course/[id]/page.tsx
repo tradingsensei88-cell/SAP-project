@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import VideoPlayer from "@/components/course/VideoPlayer";
 import CourseSidebar from "@/components/course/CourseSidebar";
 import ContextAI from "@/components/course/ContextAI";
+import { CourseAIChatWidget } from "@/components/course/ai/CourseAIChatWidget";
 import { motion } from "framer-motion";
 import { Info, Share2, Award } from "lucide-react";
 
@@ -62,6 +63,9 @@ export default function CoursePage() {
 
             {/* Floating Tools */}
             <ContextAI />
+
+            {/* New RAG AI Assistant */}
+            <CourseAIChatWidget courseId={courseId} />
         </main>
     );
 }

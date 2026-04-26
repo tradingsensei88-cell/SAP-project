@@ -43,16 +43,25 @@ export const authConfig = {
 
             return true;
         },
-        async jwt({ token, user }: any) {
+        async jwt({ token, user, trigger, session }: any) {
             if (user) {
                 token.role = (user as any).role;
                 token.credits = (user as any).credits;
+            }
+            if (trigger === "update" && session) {
+                if (session.name) token.name = session.name;
+                if (session.image) token.picture = session.image;
             }
             return token;
         },
         async session({ session, token }: any) {
             if (token.sub && session.user) {
                 session.user.id = token.sub;
+
+                // Update session from token to reflect any profile changes
+                if (token.name) session.user.name = token.name;
+                if (token.picture) session.user.image = token.picture;
+
                 (session.user as any).role = token.role;
                 (session.user as any).credits = token.credits;
             }

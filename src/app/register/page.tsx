@@ -22,7 +22,7 @@ function SubmitButton({ role }: { role: string }) {
     );
 }
 
-const initialState = { error: "", success: false };
+const initialState: any = { error: "", success: false };
 
 export default function RegisterPage() {
     const [role, setRole] = useState<"student" | "instructor">("student");

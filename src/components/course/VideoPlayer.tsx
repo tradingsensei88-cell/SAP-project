@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Play, Pause, Volume2, VolumeX, Maximize, SkipForward, ScanLine } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -20,6 +20,22 @@ export default function VideoPlayer({
             setIsPlaying(!isPlaying);
         }
     };
+
+    useEffect(() => {
+        const handleSeek = (e: Event) => {
+            const customEvent = e as CustomEvent<{ seconds: number }>;
+            if (videoRef.current && customEvent.detail?.seconds !== undefined) {
+                videoRef.current.currentTime = customEvent.detail.seconds;
+                if (!isPlaying) {
+                    videoRef.current.play();
+                    setIsPlaying(true);
+                }
+            }
+        };
+
+        window.addEventListener('aiSeekTo', handleSeek);
+        return () => window.removeEventListener('aiSeekTo', handleSeek);
+    }, [isPlaying]);
 
     const handleTimeUpdate = () => {
         if (videoRef.current) {

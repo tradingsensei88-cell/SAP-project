@@ -1,11 +1,9 @@
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
 }
 
 generator client {
   provider = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
 }
 
 model User {
@@ -17,12 +15,16 @@ model User {
   password      String?
   role          String    @default("student")
   credits       Int       @default(30)
+  bio           String?
+  maxCredits    Int       @default(30)
   
-  accounts      Account[]
-  sessions      Session[]
-  courses       Course[]       @relation("InstructorCourses")
-  enrollments   Enrollment[]
-  videoProgress VideoProgress[]
+  accounts           Account[]
+  sessions           Session[]
+  courses            Course[]       @relation("InstructorCourses")
+  enrollments        Enrollment[]
+  videoProgress      VideoProgress[]
+  transcriptHistory  TranscriptHistory[]
+  aiQueryLogs        AiQueryLog[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -77,6 +79,7 @@ model Course {
   modules      Module[]
   enrollments  Enrollment[]
   analytics    CourseAnalytics?
+  aiQueryLogs  AiQueryLog[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -109,6 +112,7 @@ model Video {
   duration            Float?   // in seconds
   
   videoProgress   VideoProgress[]
+  transcript      Transcript?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -151,4 +155,62 @@ model CourseAnalytics {
   totalRevenue Float    @default(0)
   
   updatedAt    DateTime @updatedAt
+}
+
+model TranscriptHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId   String
+  videoUrl  String
+  language  String   @default("en")
+  createdAt DateTime @default(now())
+}
+
+// Represents the overall transcript configuration for a video
+model Transcript {
+  id           String             @id @default(cuid())
+  videoId      String             @unique
+  video        Video              @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  status       String             @default("processing") // processing | ready | error | manual
+  language     String             @default("en")
+  rawTextUrl   String?            // URL to the full raw transcript text stored in S3/Cloudinary
+  chunks       TranscriptChunk[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+}
+
+// Stores the relational metadata for chunks (embeddings go to VectorDB)
+model TranscriptChunk {
+  id              String       @id @default(cuid())
+  transcriptId    String
+  transcript      Transcript   @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
+  courseId        String
+  moduleId        String
+  videoId         String
+  
+  text            String       // The actual chunk text
+  startTime       Float        // Timestamp start in seconds
+  endTime         Float        // Timestamp end in seconds
+  chunkIndex      Int          // Order of the chunk in the video
+  
+  // Vector ID referencing the embedding in Pinecone/Qdrant
+  vectorId        String       @unique 
+  
+  createdAt       DateTime     @default(now())
+}
+
+// Stores questions asked for analytics
+model AiQueryLog {
+  id          String   @id @default(cuid())
+  userId      String
+  courseId    String
+  videoId     String?
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  query       String
+  response    String
+  foundAnswer Boolean  @default(true) // False if the LLM couldn't find the answer
+  createdAt   DateTime @default(now())
 }

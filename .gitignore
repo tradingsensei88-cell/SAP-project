@@ -40,6 +40,41 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# prisma generated
 /src/generated/prisma
 
-/src/generated/prisma
+# large 3D model files (too big for GitHub)
+/steampunk_book/
+/3d git/
+/public/models/
+
+# nested repos
+/transcribe/
+
+# debug/error log files
+build_err*.txt
+deploy_logs.txt
+errors.txt
+final_deploy.txt
+ts_errors.txt
+prisma_error.json
+prisma_error.txt
+prisma_validate.txt
+dev-log.txt
+
+# test files
+test-gemini.js
+test_prisma.js
+reproduce_register_error.js
+
+# backup files
+*.bak
+
+# database
+dev.db
+
+# batch scripts
+*.bat
+
+# data directory
+/data/
